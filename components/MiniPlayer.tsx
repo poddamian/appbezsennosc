@@ -39,7 +39,10 @@ export function MiniPlayer({
         shadowOffset: { width: 0, height: -4 },
         elevation: 8,
       }}>
-      <View className="h-1.5 w-full overflow-hidden rounded-full bg-violet-100">
+      <View
+        className="h-1.5 w-full overflow-hidden rounded-full bg-violet-100"
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}>
         <View className="h-full rounded-full bg-violet-600" style={{ width: `${progress * 100}%` }} />
       </View>
 
@@ -55,11 +58,18 @@ export function MiniPlayer({
 
         <Pressable
           onPress={onTogglePlay}
+          accessibilityRole="button"
+          accessibilityLabel={isPlaying ? 'Pauza' : 'Odtwórz'}
           className="mx-2 h-12 w-12 items-center justify-center rounded-full bg-violet-600">
           <Text className="text-xl text-white">{isPlaying ? '❚❚' : '▶'}</Text>
         </Pressable>
 
-        <Pressable onPress={onClose} hitSlop={8} className="h-12 w-8 items-center justify-center">
+        <Pressable
+          onPress={onClose}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Zamknij odtwarzacz"
+          className="h-12 w-8 items-center justify-center">
           <Text className="text-xl text-slate-400">✕</Text>
         </Pressable>
       </View>
@@ -72,6 +82,9 @@ export function MiniPlayer({
             <Pressable
               key={minutes}
               onPress={() => onSelectSleepTimer(minutes)}
+              accessibilityRole="button"
+              accessibilityLabel={`Uśpij po ${minutes} minutach`}
+              accessibilityState={{ selected: isSelected }}
               className={`rounded-full px-3 py-1.5 ${isSelected ? 'bg-violet-600' : 'bg-violet-100'}`}>
               <Text className={`text-xs font-semibold ${isSelected ? 'text-white' : 'text-violet-900'}`}>
                 {minutes} min

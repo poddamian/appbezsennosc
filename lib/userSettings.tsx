@@ -2,11 +2,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 
 import { useAuth } from './auth';
+import { getSupabaseErrorMessage } from './errors';
 import { supabase, type UserSettings } from './supabase';
 
 type UserSettingsContextValue = {
   settings: UserSettings | null;
   isLoading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
 };
 
@@ -18,17 +20,32 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
 
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!userId) {
       setSettings(null);
+      setError(null);
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
-    const { data } = await supabase.from('user_settings').select('*').eq('user_id', userId).maybeSingle();
-    setSettings(data ?? null);
+    const { data, error: fetchError } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (fetchError) {
+      // Keep whatever settings we already had (if any) rather than treating a
+      // transient failure as "this user has no row yet" - the root layout
+      // relies on `settings === null` to mean the latter.
+      setError(getSupabaseErrorMessage(fetchError));
+    } else {
+      setError(null);
+      setSettings(data ?? null);
+    }
     setIsLoading(false);
   }, [userId]);
 
@@ -36,7 +53,10 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const value = useMemo(() => ({ settings, isLoading, refresh }), [settings, isLoading, refresh]);
+  const value = useMemo(
+    () => ({ settings, isLoading, error, refresh }),
+    [settings, isLoading, error, refresh]
+  );
 
   return <UserSettingsContext.Provider value={value}>{children}</UserSettingsContext.Provider>;
 }

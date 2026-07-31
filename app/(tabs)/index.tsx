@@ -5,11 +5,15 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 
 import { Card } from '../../components/Card';
 import { EmojiScale, type EmojiOption } from '../../components/EmojiScale';
+import { ErrorState } from '../../components/ErrorState';
+import { InlineError } from '../../components/InlineError';
+import { LoadingScreen } from '../../components/LoadingScreen';
 import { RoutineChecklist } from '../../components/RoutineChecklist';
 import { Stepper } from '../../components/Stepper';
 import { TimeStepper } from '../../components/TimeStepper';
 import { ToggleRow } from '../../components/ToggleRow';
 import { useAuth } from '../../lib/auth';
+import { getSupabaseErrorMessage } from '../../lib/errors';
 import {
   dbTimeToTimeValue,
   formatPolishDate,
@@ -48,6 +52,7 @@ export default function JournalScreen() {
   const userId = session?.user.id;
 
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sleepEntry, setSleepEntry] = useState<SleepEntry | null>(null);
   const [eveningFactors, setEveningFactors] = useState<EveningFactors | null>(null);
 
@@ -76,14 +81,21 @@ export default function JournalScreen() {
   const loadToday = useCallback(async () => {
     if (!userId) return;
     setIsLoading(true);
+    setLoadError(null);
 
-    const [{ data: sleepData }, { data: eveningData }] = await Promise.all([
+    const [sleepResult, eveningResult] = await Promise.all([
       supabase.from('sleep_entries').select('*').eq('user_id', userId).eq('date', today).maybeSingle(),
       supabase.from('evening_factors').select('*').eq('user_id', userId).eq('date', today).maybeSingle(),
     ]);
 
-    setSleepEntry(sleepData ?? null);
-    setEveningFactors(eveningData ?? null);
+    if (sleepResult.error || eveningResult.error) {
+      setLoadError(getSupabaseErrorMessage(sleepResult.error ?? eveningResult.error));
+      setIsLoading(false);
+      return;
+    }
+
+    setSleepEntry(sleepResult.data ?? null);
+    setEveningFactors(eveningResult.data ?? null);
     setIsLoading(false);
   }, [userId, today]);
 
@@ -182,11 +194,11 @@ export default function JournalScreen() {
   }
 
   if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-indigo-50">
-        <ActivityIndicator color="#6d28d9" />
-      </View>
-    );
+    return <LoadingScreen />;
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={loadToday} />;
   }
 
   const morningDone = Boolean(sleepEntry) && !editingMorning;
@@ -212,10 +224,18 @@ export default function JournalScreen() {
             {sleepEntry?.times_woken} · Stres: {emojiFor(STRESS_OPTIONS, eveningFactors?.stress_level)}
           </Text>
           <View className="mt-4 flex-row gap-3">
-            <Pressable onPress={startEditingMorning} className="rounded-full bg-violet-100 px-4 py-2">
+            <Pressable
+              onPress={startEditingMorning}
+              accessibilityRole="button"
+              accessibilityLabel="Edytuj poranny wpis"
+              className="rounded-full bg-violet-100 px-4 py-2">
               <Text className="font-semibold text-violet-900">Edytuj poranny</Text>
             </Pressable>
-            <Pressable onPress={startEditingEvening} className="rounded-full bg-violet-100 px-4 py-2">
+            <Pressable
+              onPress={startEditingEvening}
+              accessibilityRole="button"
+              accessibilityLabel="Edytuj wieczorny wpis"
+              className="rounded-full bg-violet-100 px-4 py-2">
               <Text className="font-semibold text-violet-900">Edytuj wieczorny</Text>
             </Pressable>
           </View>
@@ -226,7 +246,11 @@ export default function JournalScreen() {
             <Card>
               <View className="flex-row items-center justify-between">
                 <Text className="text-base font-semibold text-indigo-950">Poranny wpis zapisany ✓</Text>
-                <Pressable onPress={startEditingMorning} hitSlop={8}>
+                <Pressable
+                  onPress={startEditingMorning}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edytuj poranny wpis">
                   <Text className="font-semibold text-violet-700">Edytuj</Text>
                 </Pressable>
               </View>
@@ -259,11 +283,14 @@ export default function JournalScreen() {
                 <Stepper value={timesWoken} onChange={setTimesWoken} />
               </View>
 
-              {morningError ? <Text className="mt-4 text-sm text-red-600">{morningError}</Text> : null}
+              {morningError ? <InlineError message={morningError} /> : null}
 
               <Pressable
                 onPress={handleSaveMorning}
                 disabled={isSavingMorning}
+                accessibilityRole="button"
+                accessibilityLabel="Zapisz poranny wpis"
+                accessibilityState={{ disabled: isSavingMorning, busy: isSavingMorning }}
                 className="mt-6 items-center rounded-2xl bg-indigo-900 py-4 disabled:opacity-50">
                 {isSavingMorning ? (
                   <ActivityIndicator color="white" />
@@ -279,7 +306,11 @@ export default function JournalScreen() {
               <Card>
                 <View className="flex-row items-center justify-between">
                   <Text className="text-base font-semibold text-indigo-950">Wieczorny wpis zapisany ✓</Text>
-                  <Pressable onPress={startEditingEvening} hitSlop={8}>
+                  <Pressable
+                    onPress={startEditingEvening}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edytuj wieczorny wpis">
                     <Text className="font-semibold text-violet-700">Edytuj</Text>
                   </Pressable>
                 </View>
@@ -311,6 +342,8 @@ export default function JournalScreen() {
                     minimumTrackTintColor="#6d28d9"
                     maximumTrackTintColor="#ddd6fe"
                     thumbTintColor="#6d28d9"
+                    accessibilityLabel="Czas przed ekranem przed snem"
+                    accessibilityValue={{ min: 0, max: 120, now: screenTime, text: `${screenTime} minut` }}
                   />
                 </View>
 
@@ -319,11 +352,14 @@ export default function JournalScreen() {
                   <EmojiScale options={STRESS_OPTIONS} value={stressLevel} onChange={setStressLevel} />
                 </View>
 
-                {eveningError ? <Text className="mt-4 text-sm text-red-600">{eveningError}</Text> : null}
+                {eveningError ? <InlineError message={eveningError} /> : null}
 
                 <Pressable
                   onPress={handleSaveEvening}
                   disabled={isSavingEvening}
+                  accessibilityRole="button"
+                  accessibilityLabel="Zapisz wieczorny wpis"
+                  accessibilityState={{ disabled: isSavingEvening, busy: isSavingEvening }}
                   className="mt-6 items-center rounded-2xl bg-indigo-900 py-4 disabled:opacity-50">
                   {isSavingEvening ? (
                     <ActivityIndicator color="white" />

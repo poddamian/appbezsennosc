@@ -1,11 +1,15 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
 import { Card } from '../../components/Card';
+import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
+import { LoadingScreen } from '../../components/LoadingScreen';
 import { ProgressBar } from '../../components/ProgressBar';
 import { useAuth } from '../../lib/auth';
+import { getSupabaseErrorMessage } from '../../lib/errors';
 import {
   buildNightPairs,
   buildSleepQualityChartData,
@@ -26,12 +30,14 @@ export default function InsightsScreen() {
   const { isPremium } = usePremium();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sleepEntries, setSleepEntries] = useState<SleepEntry[]>([]);
   const [eveningFactors, setEveningFactors] = useState<EveningFactors[]>([]);
 
   const loadHistory = useCallback(async () => {
     if (!userId) return;
     setIsLoading(true);
+    setLoadError(null);
 
     // Free tier only ever sees the last FREE_HISTORY_DAYS days of history —
     // capping the fetch itself (not just the display) so pattern detection
@@ -58,10 +64,16 @@ export default function InsightsScreen() {
       eveningQuery = eveningQuery.gte('date', earliestDate);
     }
 
-    const [{ data: sleepData }, { data: eveningData }] = await Promise.all([sleepQuery, eveningQuery]);
+    const [sleepResult, eveningResult] = await Promise.all([sleepQuery, eveningQuery]);
 
-    setSleepEntries(sleepData ?? []);
-    setEveningFactors(eveningData ?? []);
+    if (sleepResult.error || eveningResult.error) {
+      setLoadError(getSupabaseErrorMessage(sleepResult.error ?? eveningResult.error));
+      setIsLoading(false);
+      return;
+    }
+
+    setSleepEntries(sleepResult.data ?? []);
+    setEveningFactors(eveningResult.data ?? []);
     setIsLoading(false);
   }, [userId, isPremium]);
 
@@ -72,9 +84,25 @@ export default function InsightsScreen() {
   );
 
   if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={loadHistory} />;
+  }
+
+  if (sleepEntries.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center bg-indigo-50">
-        <ActivityIndicator color="#6d28d9" />
+      <View className="flex-1 bg-indigo-50 px-5">
+        <View className="flex-1 items-center justify-center">
+          <EmptyState
+            emoji="📊"
+            title="Brak jeszcze wpisów — zacznij dzisiaj!"
+            description="Statystyki i wzorce pojawią się tutaj, gdy uzupełnisz pierwsze wpisy w Dzienniku."
+            actionLabel="Przejdź do Dziennika"
+            onAction={() => router.push('/')}
+          />
+        </View>
       </View>
     );
   }
@@ -103,6 +131,8 @@ export default function InsightsScreen() {
           </Text>
           <Pressable
             onPress={() => router.push('/premium')}
+            accessibilityRole="button"
+            accessibilityLabel="Zobacz Premium"
             className="mt-3 items-center rounded-2xl bg-violet-100 py-2.5">
             <Text className="font-semibold text-violet-900">Zobacz Premium</Text>
           </Pressable>
@@ -130,7 +160,11 @@ export default function InsightsScreen() {
       <Card>
         <Text className="text-lg font-semibold text-indigo-950">Jakość snu — ostatnie 14 dni</Text>
         {chartData.length > 0 ? (
-          <View className="mt-4 items-center">
+          <View
+            className="mt-4 items-center"
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel={`Wykres jakości snu z ostatnich 14 dni, ${chartData.length} zarejestrowanych nocy`}>
             <LineChart
               data={chartData.map((point) => ({ value: point.value, label: point.label }))}
               width={chartWidth}
@@ -191,19 +225,28 @@ export default function InsightsScreen() {
 
 function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
-    <View className="items-center">
+    <View className="items-center" accessible accessibilityLabel={`${label}: ${value}`}>
       <Text className="text-2xl font-bold text-indigo-950">{value}</Text>
       <Text className="mt-1 text-xs text-slate-500">{label}</Text>
     </View>
   );
 }
 
+const TREND_LABELS: Record<'up' | 'down' | 'flat', string> = {
+  up: 'rosnąca',
+  down: 'malejąca',
+  flat: 'stabilna',
+};
+
 function TrendStat({ trend }: { trend: 'up' | 'down' | 'flat' | null }) {
   const arrow = trend === 'up' ? '▲' : trend === 'down' ? '▼' : '▬';
   const color = trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-rose-600' : 'text-slate-400';
 
   return (
-    <View className="items-center">
+    <View
+      className="items-center"
+      accessible
+      accessibilityLabel={`Trend vs poprzedni tydzień: ${trend ? TREND_LABELS[trend] : 'brak danych'}`}>
       <Text className={`text-2xl font-bold ${color}`}>{trend ? arrow : '–'}</Text>
       <Text className="mt-1 text-xs text-slate-500">vs poprz. tydzień</Text>
     </View>

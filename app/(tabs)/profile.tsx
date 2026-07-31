@@ -1,11 +1,14 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Card } from '../../components/Card';
+import { InlineError } from '../../components/InlineError';
+import { LoadingScreen } from '../../components/LoadingScreen';
 import { TimeStepper } from '../../components/TimeStepper';
 import { ToggleRow } from '../../components/ToggleRow';
 import { useAuth } from '../../lib/auth';
+import { getSupabaseErrorMessage } from '../../lib/errors';
 import { formatPolishDate, type TimeValue } from '../../lib/journal';
 import { requestNotificationPermission, syncScheduledReminders } from '../../lib/notifications';
 import { usePremium } from '../../lib/premium';
@@ -17,15 +20,19 @@ export default function ProfileScreen() {
   const { settings, isLoading, refresh } = useUserSettings();
   const { isPremium, trialEndsAt } = usePremium();
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   async function updateSettings(patch: Partial<UserSettings>) {
     if (!session || !settings) return;
+    setSettingsError(null);
     const next = { ...settings, ...patch };
 
-    await supabase
-      .from('user_settings')
-      .update(patch)
-      .eq('user_id', session.user.id);
+    const { error } = await supabase.from('user_settings').update(patch).eq('user_id', session.user.id);
+
+    if (error) {
+      setSettingsError(getSupabaseErrorMessage(error));
+      return;
+    }
 
     await syncScheduledReminders(next.notifications_enabled, {
       eveningHour: next.evening_reminder_hour,
@@ -50,11 +57,7 @@ export default function ProfileScreen() {
   }
 
   if (isLoading || !settings) {
-    return (
-      <View className="flex-1 items-center justify-center bg-indigo-50">
-        <ActivityIndicator color="#6d28d9" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   const eveningTime: TimeValue = {
@@ -91,6 +94,8 @@ export default function ProfileScreen() {
         </Text>
         <Pressable
           onPress={() => router.push('/premium')}
+          accessibilityRole="button"
+          accessibilityLabel={isPremium ? 'Zarządzaj Premium' : 'Zobacz Premium'}
           className="mt-4 items-center rounded-2xl bg-violet-100 py-3">
           <Text className="font-semibold text-violet-900">{isPremium ? 'Zarządzaj Premium' : 'Zobacz Premium'}</Text>
         </Pressable>
@@ -103,6 +108,8 @@ export default function ProfileScreen() {
         </Text>
         <Pressable
           onPress={() => router.push('/routine-settings')}
+          accessibilityRole="button"
+          accessibilityLabel="Ustawienia rutyny"
           className="mt-4 items-center rounded-2xl bg-violet-100 py-3">
           <Text className="font-semibold text-violet-900">Ustawienia rutyny</Text>
         </Pressable>
@@ -118,10 +125,9 @@ export default function ProfileScreen() {
           />
         </View>
         {permissionDenied ? (
-          <Text className="mt-3 text-sm text-red-600">
-            Brak zgody na powiadomienia. Włącz je w ustawieniach systemowych telefonu.
-          </Text>
+          <InlineError message="Brak zgody na powiadomienia. Włącz je w ustawieniach systemowych telefonu." />
         ) : null}
+        {settingsError ? <InlineError message={settingsError} /> : null}
 
         {settings.notifications_enabled ? (
           <View className="mt-4 gap-3">
@@ -149,6 +155,8 @@ export default function ProfileScreen() {
 
       <Pressable
         onPress={() => supabase.auth.signOut()}
+        accessibilityRole="button"
+        accessibilityLabel="Wyloguj się"
         className="items-center rounded-2xl bg-slate-900 py-4">
         <Text className="text-base font-semibold text-white">Wyloguj się</Text>
       </Pressable>

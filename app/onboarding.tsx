@@ -58,8 +58,15 @@ export default function OnboardingScreen() {
         onMomentumScrollEnd={handleMomentumScrollEnd}
         className="flex-1">
         {SLIDES.map((slide) => (
-          <View key={slide.title} style={{ width: pageWidth }} className="items-center justify-center px-10">
-            <Text style={{ fontSize: 64 }}>{slide.emoji}</Text>
+          <View
+            key={slide.title}
+            style={{ width: pageWidth }}
+            className="items-center justify-center px-10"
+            accessible
+            accessibilityLabel={`${slide.title}. ${slide.body}`}>
+            <Text style={{ fontSize: 64 }} accessibilityElementsHidden importantForAccessibility="no">
+              {slide.emoji}
+            </Text>
             <Text className="mt-6 text-center text-2xl font-bold text-indigo-950">{slide.title}</Text>
             <Text className="mt-4 text-center text-base leading-6 text-slate-600">{slide.body}</Text>
           </View>
@@ -67,7 +74,10 @@ export default function OnboardingScreen() {
       </ScrollView>
 
       <View className="items-center pb-10 pt-4">
-        <View className="flex-row gap-2">
+        <View
+          className="flex-row gap-2"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants">
           {SLIDES.map((slide, dotIndex) => (
             <View
               key={slide.title}
@@ -76,7 +86,11 @@ export default function OnboardingScreen() {
           ))}
         </View>
 
-        <Pressable onPress={goToNext} className="mt-6 w-11/12 items-center rounded-2xl bg-indigo-900 py-4">
+        <Pressable
+          onPress={goToNext}
+          accessibilityRole="button"
+          accessibilityLabel={isLast ? 'Zaczynamy' : `Dalej, slajd ${index + 1} z ${SLIDES.length}`}
+          className="mt-6 w-11/12 items-center rounded-2xl bg-indigo-900 py-4">
           <Text className="text-base font-semibold text-white">{isLast ? 'Zaczynamy' : 'Dalej'}</Text>
         </Pressable>
       </View>

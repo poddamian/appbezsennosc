@@ -58,6 +58,8 @@ export default function PremiumScreen() {
         {COMPARISON_ROWS.map((row, index) => (
           <View
             key={row.label}
+            accessible
+            accessibilityLabel={`${row.label}: Darmowe ${row.free}, Premium ${row.premium}`}
             className={`flex-row items-center py-3 ${
               index < COMPARISON_ROWS.length - 1 ? 'border-b border-slate-50' : ''
             }`}>
@@ -68,7 +70,11 @@ export default function PremiumScreen() {
         ))}
       </Card>
 
-      <Pressable onPress={startFreeTrial} className="items-center rounded-2xl bg-indigo-900 py-4">
+      <Pressable
+        onPress={startFreeTrial}
+        accessibilityRole="button"
+        accessibilityLabel={`Wypróbuj za darmo przez ${FREE_TRIAL_DAYS} dni`}
+        className="items-center rounded-2xl bg-indigo-900 py-4">
         <Text className="text-base font-semibold text-white">
           Wypróbuj za darmo przez {FREE_TRIAL_DAYS} dni
         </Text>

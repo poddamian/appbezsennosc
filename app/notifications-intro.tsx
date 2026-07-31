@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
+import { InlineError } from '../components/InlineError';
 import { useAuth } from '../lib/auth';
-import { DEFAULT_EVENING_REMINDER, DEFAULT_MORNING_REMINDER, requestNotificationPermission, syncScheduledReminders } from '../lib/notifications';
+import { getSupabaseErrorMessage } from '../lib/errors';
+import {
+  DEFAULT_EVENING_REMINDER,
+  DEFAULT_MORNING_REMINDER,
+  requestNotificationPermission,
+  syncScheduledReminders,
+} from '../lib/notifications';
 import { supabase } from '../lib/supabase';
 import { useUserSettings } from '../lib/userSettings';
 
@@ -10,12 +17,14 @@ export default function NotificationsIntroScreen() {
   const { session } = useAuth();
   const { refresh } = useUserSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function saveSettings(notificationsEnabled: boolean) {
     if (!session) return;
     setIsSubmitting(true);
+    setError(null);
 
-    await supabase.from('user_settings').upsert(
+    const { error: upsertError } = await supabase.from('user_settings').upsert(
       {
         user_id: session.user.id,
         notifications_enabled: notificationsEnabled,
@@ -26,6 +35,12 @@ export default function NotificationsIntroScreen() {
       },
       { onConflict: 'user_id' }
     );
+
+    if (upsertError) {
+      setError(getSupabaseErrorMessage(upsertError));
+      setIsSubmitting(false);
+      return;
+    }
 
     if (notificationsEnabled) {
       await syncScheduledReminders(true, {
@@ -58,9 +73,14 @@ export default function NotificationsIntroScreen() {
         wypełniał się sam z siebie. Powiadomienia możesz w każdej chwili wyłączyć w Profilu.
       </Text>
 
+      {error ? <InlineError message={error} /> : null}
+
       <Pressable
         onPress={handleEnable}
         disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel="Włącz powiadomienia"
+        accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
         className="mt-8 items-center rounded-2xl bg-indigo-900 py-4 disabled:opacity-50">
         {isSubmitting ? (
           <ActivityIndicator color="white" />
@@ -72,6 +92,9 @@ export default function NotificationsIntroScreen() {
       <Pressable
         onPress={() => saveSettings(false)}
         disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel="Nie teraz"
+        accessibilityState={{ disabled: isSubmitting }}
         className="mt-4 items-center py-2 disabled:opacity-50">
         <Text className="text-sm text-slate-500">Nie teraz</Text>
       </Pressable>

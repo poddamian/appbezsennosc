@@ -10,6 +10,9 @@ export function ToggleRow({ label, value, onChange }: ToggleRowProps) {
   return (
     <Pressable
       onPress={() => onChange(!value)}
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: value }}
       className={`flex-row items-center justify-between rounded-2xl border px-4 py-4 ${
         value ? 'border-violet-400 bg-violet-50' : 'border-slate-200 bg-white'
       }`}>

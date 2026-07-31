@@ -136,6 +136,8 @@ export default function RelaxScreen() {
             </Text>
             <Pressable
               onPress={() => router.push('/premium')}
+              accessibilityRole="button"
+              accessibilityLabel="Zobacz Premium"
               className="mt-3 items-center rounded-2xl bg-violet-100 py-2.5">
               <Text className="font-semibold text-violet-900">Zobacz Premium</Text>
             </Pressable>

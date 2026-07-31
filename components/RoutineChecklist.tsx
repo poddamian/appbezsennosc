@@ -1,10 +1,14 @@
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { useAuth } from '../lib/auth';
+import { getSupabaseErrorMessage } from '../lib/errors';
 import { getTodayDateString } from '../lib/journal';
 import { supabase, type RoutineChecklistItem } from '../lib/supabase';
 import { Card } from './Card';
+import { EmptyState } from './EmptyState';
+import { InlineError } from './InlineError';
 
 export function RoutineChecklist() {
   const { session } = useAuth();
@@ -12,14 +16,17 @@ export function RoutineChecklist() {
   const today = getTodayDateString();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const [items, setItems] = useState<RoutineChecklistItem[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     if (!userId) return;
     setIsLoading(true);
+    setLoadError(null);
 
-    const [{ data: itemsData }, { data: completionsData }] = await Promise.all([
+    const [itemsResult, completionsResult] = await Promise.all([
       supabase
         .from('routine_checklist_items')
         .select('*')
@@ -34,8 +41,14 @@ export function RoutineChecklist() {
         .eq('completed', true),
     ]);
 
-    setItems(itemsData ?? []);
-    setCompletedIds(new Set((completionsData ?? []).map((row) => row.checklist_item_id)));
+    if (itemsResult.error || completionsResult.error) {
+      setLoadError(getSupabaseErrorMessage(itemsResult.error ?? completionsResult.error));
+      setIsLoading(false);
+      return;
+    }
+
+    setItems(itemsResult.data ?? []);
+    setCompletedIds(new Set((completionsResult.data ?? []).map((row) => row.checklist_item_id)));
     setIsLoading(false);
   }, [userId, today]);
 
@@ -45,6 +58,7 @@ export function RoutineChecklist() {
 
   async function toggle(item: RoutineChecklistItem) {
     if (!userId) return;
+    setToggleError(null);
     const wasCompleted = completedIds.has(item.id);
 
     setCompletedIds((prev) => {
@@ -67,11 +81,50 @@ export function RoutineChecklist() {
       { onConflict: 'checklist_item_id,date' }
     );
 
-    if (error) await load();
+    if (error) {
+      setToggleError(getSupabaseErrorMessage(error));
+      await load();
+    }
   }
 
-  if (isLoading || items.length === 0) {
-    return null;
+  if (isLoading) {
+    return (
+      <Card>
+        <View className="items-center py-2" accessibilityRole="progressbar" accessibilityLabel="Ładowanie rutyny">
+          <ActivityIndicator color="#6d28d9" />
+        </View>
+      </Card>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Card>
+        <Text className="text-lg font-semibold text-indigo-950">Rutyna wieczorna</Text>
+        <InlineError message={loadError} />
+        <Pressable
+          onPress={load}
+          accessibilityRole="button"
+          accessibilityLabel="Spróbuj ponownie"
+          className="mt-3 items-center rounded-2xl bg-violet-100 py-2.5">
+          <Text className="font-semibold text-violet-900">Spróbuj ponownie</Text>
+        </Pressable>
+      </Card>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <Card>
+        <EmptyState
+          emoji="📝"
+          title="Nie masz jeszcze ustawionej rutyny wieczornej"
+          description="Dodaj kilka nawyków w Profilu, żeby odhaczać je tutaj każdego dnia."
+          actionLabel="Ustaw rutynę"
+          onAction={() => router.push('/routine-settings')}
+        />
+      </Card>
+    );
   }
 
   return (
@@ -84,6 +137,9 @@ export function RoutineChecklist() {
             <Pressable
               key={item.id}
               onPress={() => toggle(item)}
+              accessibilityRole="checkbox"
+              accessibilityLabel={item.title}
+              accessibilityState={{ checked }}
               className={`flex-row items-center rounded-2xl border px-4 py-3 ${
                 checked ? 'border-violet-400 bg-violet-50' : 'border-slate-200 bg-white'
               }`}>
@@ -100,6 +156,7 @@ export function RoutineChecklist() {
           );
         })}
       </View>
+      {toggleError ? <InlineError message={toggleError} /> : null}
     </Card>
   );
 }

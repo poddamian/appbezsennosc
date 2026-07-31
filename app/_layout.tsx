@@ -2,6 +2,7 @@ import '../global.css';
 
 import { Stack } from 'expo-router/stack';
 
+import { ErrorState } from '../components/ErrorState';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { configureNotificationHandler } from '../lib/notifications';
 import { OnboardingProvider, useOnboarding } from '../lib/onboarding';
@@ -12,7 +13,8 @@ configureNotificationHandler();
 
 function RootNavigator() {
   const { session, isLoading: isAuthLoading } = useAuth();
-  const { settings, isLoading: areSettingsLoading } = useUserSettings();
+  const { settings, isLoading: areSettingsLoading, error: settingsError, refresh: refreshSettings } =
+    useUserSettings();
   const { hasCompletedOnboarding } = useOnboarding();
 
   const isWaitingOnSessionData =
@@ -20,6 +22,13 @@ function RootNavigator() {
 
   if (isAuthLoading || isWaitingOnSessionData) {
     return null;
+  }
+
+  // A failed first fetch (no row loaded yet) must not be mistaken for "no
+  // row exists" - that would silently misroute a returning user into the
+  // notifications onboarding screen every time their connection blips.
+  if (session && settings === null && settingsError) {
+    return <ErrorState message={settingsError} onRetry={refreshSettings} />;
   }
 
   const needsOnboarding = Boolean(session) && hasCompletedOnboarding === false;

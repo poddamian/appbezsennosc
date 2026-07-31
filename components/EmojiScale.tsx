@@ -22,6 +22,9 @@ export function EmojiScale({ options, value, onChange }: EmojiScaleProps) {
             key={option.value}
             onPress={() => onChange(option.value)}
             hitSlop={6}
+            accessibilityRole="radio"
+            accessibilityLabel={option.label}
+            accessibilityState={{ checked: selected }}
             className={`flex-1 items-center rounded-2xl py-3 ${
               selected ? 'bg-violet-200' : 'bg-white'
             }`}

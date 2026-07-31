@@ -81,6 +81,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
+          accessibilityLabel="Adres email"
           className="rounded-lg border border-slate-300 px-4 py-3 text-base text-slate-900"
         />
         <TextInput
@@ -90,17 +91,25 @@ export default function LoginScreen() {
           secureTextEntry
           autoCapitalize="none"
           autoComplete={isSignUp ? 'new-password' : 'current-password'}
+          accessibilityLabel="Hasło"
           className="rounded-lg border border-slate-300 px-4 py-3 text-base text-slate-900"
         />
       </View>
 
-      {fieldError ? <Text className="mt-3 text-sm text-red-600">{fieldError}</Text> : null}
-      {formError ? <Text className="mt-3 text-sm text-red-600">{formError}</Text> : null}
-      {infoMessage ? <Text className="mt-3 text-sm text-emerald-600">{infoMessage}</Text> : null}
+      {fieldError ? <Text accessibilityRole="alert" className="mt-3 text-sm text-red-600">{fieldError}</Text> : null}
+      {formError ? <Text accessibilityRole="alert" className="mt-3 text-sm text-red-600">{formError}</Text> : null}
+      {infoMessage ? (
+        <Text accessibilityRole="alert" className="mt-3 text-sm text-emerald-600">
+          {infoMessage}
+        </Text>
+      ) : null}
 
       <Pressable
         onPress={handleSubmit}
         disabled={isSubmitting}
+        accessibilityRole="button"
+        accessibilityLabel={isSignUp ? 'Zarejestruj się' : 'Zaloguj się'}
+        accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
         className="mt-6 items-center rounded-lg bg-slate-900 py-3 disabled:opacity-50">
         {isSubmitting ? (
           <ActivityIndicator color="white" />
@@ -111,7 +120,11 @@ export default function LoginScreen() {
         )}
       </Pressable>
 
-      <Pressable onPress={toggleMode} className="mt-4 items-center">
+      <Pressable
+        onPress={toggleMode}
+        accessibilityRole="button"
+        accessibilityLabel={isSignUp ? 'Masz już konto? Zaloguj się' : 'Nie masz konta? Zarejestruj się'}
+        className="mt-4 items-center">
         <Text className="text-sm text-slate-600">
           {isSignUp ? 'Masz już konto? Zaloguj się' : 'Nie masz konta? Zarejestruj się'}
         </Text>

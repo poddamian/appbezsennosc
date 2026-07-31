@@ -13,9 +13,17 @@ type AudioTrackCardProps = {
 export function AudioTrackCard({ track, isActive, isPlaying, isLocked, onPress }: AudioTrackCardProps) {
   const showPause = isActive && isPlaying;
 
+  const statusLabel = isLocked
+    ? 'zablokowane, wymaga Premium'
+    : showPause
+      ? 'odtwarzane'
+      : 'zatrzymane';
+
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${track.title}, ${formatDuration(track.durationSeconds)}, ${statusLabel}`}
       className={`flex-row items-center rounded-2xl border px-4 py-4 ${
         isActive ? 'border-violet-400 bg-violet-50' : 'border-slate-200 bg-white'
       }`}>

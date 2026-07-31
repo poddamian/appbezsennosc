@@ -7,10 +7,13 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#eef2ff",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.poddamian.sleeptrack"
     },
     "android": {
+      "package": "com.poddamian.sleeptrack",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,7 +28,16 @@
     "plugins": [
       "expo-router",
       "expo-notifications",
-      ["expo-audio", { "recordAudioAndroid": false }]
+      ["expo-audio", { "recordAudioAndroid": false }],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#eef2ff"
+        }
+      ]
     ]
   }
 }

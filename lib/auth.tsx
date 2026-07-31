@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
+import { isNetworkError } from './errors';
 import { supabase } from './supabase';
 
 type AuthContextValue = {
@@ -57,6 +58,11 @@ const AUTH_ERROR_MESSAGES: Partial<Record<string, string>> = {
 export function getAuthErrorMessage(error: unknown): string {
   if (error && typeof error === 'object') {
     const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+    const message = 'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
+
+    if (isNetworkError({ code, message })) {
+      return 'Sprawdź połączenie z internetem i spróbuj ponownie.';
+    }
     if (code && AUTH_ERROR_MESSAGES[code]) {
       return AUTH_ERROR_MESSAGES[code]!;
     }
