@@ -1,10 +1,21 @@
 export type TimeValue = { hour: number; minute: number };
 
-export function getTodayDateString(date: Date = new Date()): string {
+function formatDateString(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+export function getTodayDateString(date: Date = new Date()): string {
+  return formatDateString(date);
+}
+
+export function addDays(dateString: string, days: number): string {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  return formatDateString(date);
 }
 
 const POLISH_MONTHS = [
