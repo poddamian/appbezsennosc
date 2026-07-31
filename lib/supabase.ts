@@ -40,6 +40,16 @@ export type RoutineCompletion = {
   completed: boolean;
 };
 
+export type UserSettings = {
+  user_id: string;
+  notifications_enabled: boolean;
+  evening_reminder_hour: number;
+  evening_reminder_minute: number;
+  morning_reminder_hour: number;
+  morning_reminder_minute: number;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -76,6 +86,23 @@ export type Database = {
         Insert: Partial<Pick<RoutineCompletion, 'id' | 'completed'>> &
           Omit<RoutineCompletion, 'id' | 'completed'>;
         Update: Partial<RoutineCompletion>;
+        Relationships: [];
+      };
+      user_settings: {
+        Row: UserSettings;
+        Insert: Partial<
+          Pick<
+            UserSettings,
+            | 'notifications_enabled'
+            | 'evening_reminder_hour'
+            | 'evening_reminder_minute'
+            | 'morning_reminder_hour'
+            | 'morning_reminder_minute'
+            | 'updated_at'
+          >
+        > &
+          Pick<UserSettings, 'user_id'>;
+        Update: Partial<UserSettings>;
         Relationships: [];
       };
     };

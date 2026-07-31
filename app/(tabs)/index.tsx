@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 
 import { Card } from '../../components/Card';
 import { EmojiScale, type EmojiOption } from '../../components/EmojiScale';
+import { RoutineChecklist } from '../../components/RoutineChecklist';
 import { Stepper } from '../../components/Stepper';
 import { TimeStepper } from '../../components/TimeStepper';
 import { ToggleRow } from '../../components/ToggleRow';
@@ -200,6 +201,8 @@ export default function JournalScreen() {
         <Text className="text-sm font-medium text-violet-500">Dziś, {formatPolishDate()}</Text>
         <Text className="mt-1 text-3xl font-bold text-indigo-950">Dziennik</Text>
       </View>
+
+      <RoutineChecklist />
 
       {bothDone ? (
         <Card>

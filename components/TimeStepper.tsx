@@ -7,13 +7,14 @@ type TimeStepperProps = {
   value: TimeValue | null;
   defaultValue: TimeValue;
   onChange: (value: TimeValue | null) => void;
+  allowClear?: boolean;
 };
 
 function pad(value: number) {
   return String(value).padStart(2, '0');
 }
 
-export function TimeStepper({ label, value, defaultValue, onChange }: TimeStepperProps) {
+export function TimeStepper({ label, value, defaultValue, onChange, allowClear = true }: TimeStepperProps) {
   if (!value) {
     return (
       <View className="flex-row items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-4">
@@ -48,9 +49,11 @@ export function TimeStepper({ label, value, defaultValue, onChange }: TimeSteppe
     <View className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
       <View className="flex-row items-center justify-between">
         <Text className="text-base text-slate-800">{label}</Text>
-        <Pressable onPress={() => onChange(null)} hitSlop={8}>
-          <Text className="text-sm text-slate-400">Pomiń</Text>
-        </Pressable>
+        {allowClear ? (
+          <Pressable onPress={() => onChange(null)} hitSlop={8}>
+            <Text className="text-sm text-slate-400">Pomiń</Text>
+          </Pressable>
+        ) : null}
       </View>
       <View className="mt-3 flex-row items-center justify-center gap-4">
         <TimeUnitControl value={pad(value.hour)} onIncrement={() => adjustHour(1)} onDecrement={() => adjustHour(-1)} />
