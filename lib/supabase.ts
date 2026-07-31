@@ -48,6 +48,7 @@ export type Database = {
         Insert: Partial<Pick<SleepEntry, 'id' | 'created_at'>> &
           Omit<SleepEntry, 'id' | 'created_at' | 'times_woken'> & { times_woken?: number };
         Update: Partial<SleepEntry>;
+        Relationships: [];
       };
       evening_factors: {
         Row: EveningFactors;
@@ -61,20 +62,25 @@ export type Database = {
             exercise_today?: boolean;
           };
         Update: Partial<EveningFactors>;
+        Relationships: [];
       };
       routine_checklist_items: {
         Row: RoutineChecklistItem;
         Insert: Partial<Pick<RoutineChecklistItem, 'id' | 'is_active' | 'sort_order'>> &
           Omit<RoutineChecklistItem, 'id' | 'is_active' | 'sort_order'>;
         Update: Partial<RoutineChecklistItem>;
+        Relationships: [];
       };
       routine_completions: {
         Row: RoutineCompletion;
         Insert: Partial<Pick<RoutineCompletion, 'id' | 'completed'>> &
           Omit<RoutineCompletion, 'id' | 'completed'>;
         Update: Partial<RoutineCompletion>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
   };
 };
 
