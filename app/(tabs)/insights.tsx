@@ -1,6 +1,6 @@
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
-import { ActivityIndicator, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
 import { Card } from '../../components/Card';
@@ -13,6 +13,8 @@ import {
   computeWeeklySummary,
   type FactorInsight,
 } from '../../lib/insights';
+import { addDays, getTodayDateString } from '../../lib/journal';
+import { FREE_HISTORY_DAYS, usePremium } from '../../lib/premium';
 import { supabase, type EveningFactors, type SleepEntry } from '../../lib/supabase';
 
 const HISTORY_ROW_LIMIT = 400;
@@ -21,6 +23,7 @@ export default function InsightsScreen() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const { width } = useWindowDimensions();
+  const { isPremium } = usePremium();
 
   const [isLoading, setIsLoading] = useState(true);
   const [sleepEntries, setSleepEntries] = useState<SleepEntry[]>([]);
@@ -30,25 +33,37 @@ export default function InsightsScreen() {
     if (!userId) return;
     setIsLoading(true);
 
-    const [{ data: sleepData }, { data: eveningData }] = await Promise.all([
-      supabase
-        .from('sleep_entries')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-        .limit(HISTORY_ROW_LIMIT),
-      supabase
-        .from('evening_factors')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-        .limit(HISTORY_ROW_LIMIT),
-    ]);
+    // Free tier only ever sees the last FREE_HISTORY_DAYS days of history —
+    // capping the fetch itself (not just the display) so pattern detection
+    // for free users also only draws on that window.
+    const earliestDate = isPremium
+      ? null
+      : addDays(getTodayDateString(), -(FREE_HISTORY_DAYS - 1));
+
+    let sleepQuery = supabase
+      .from('sleep_entries')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true })
+      .limit(HISTORY_ROW_LIMIT);
+    let eveningQuery = supabase
+      .from('evening_factors')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true })
+      .limit(HISTORY_ROW_LIMIT);
+
+    if (earliestDate) {
+      sleepQuery = sleepQuery.gte('date', earliestDate);
+      eveningQuery = eveningQuery.gte('date', earliestDate);
+    }
+
+    const [{ data: sleepData }, { data: eveningData }] = await Promise.all([sleepQuery, eveningQuery]);
 
     setSleepEntries(sleepData ?? []);
     setEveningFactors(eveningData ?? []);
     setIsLoading(false);
-  }, [userId]);
+  }, [userId, isPremium]);
 
   useFocusEffect(
     useCallback(() => {
@@ -79,6 +94,20 @@ export default function InsightsScreen() {
         <Text className="text-sm font-medium text-violet-500">Twoje dane</Text>
         <Text className="mt-1 text-3xl font-bold text-indigo-950">Statystyki</Text>
       </View>
+
+      {!isPremium ? (
+        <Card>
+          <Text className="text-base font-semibold text-indigo-950">🔓 Odblokuj pełną historię</Text>
+          <Text className="mt-1 text-sm text-slate-500">
+            Darmowa wersja pokazuje ostatnie {FREE_HISTORY_DAYS} dni. Premium odblokowuje historię bez limitu.
+          </Text>
+          <Pressable
+            onPress={() => router.push('/premium')}
+            className="mt-3 items-center rounded-2xl bg-violet-100 py-2.5">
+            <Text className="font-semibold text-violet-900">Zobacz Premium</Text>
+          </Pressable>
+        </Card>
+      ) : null}
 
       <Card>
         <Text className="text-lg font-semibold text-indigo-950">Podsumowanie tygodnia</Text>

@@ -7,6 +7,8 @@ export type AudioTrack = {
   durationSeconds: number;
   /** Nature/white-noise tracks are meant to loop for as long as the user listens. */
   loop: boolean;
+  /** Free tier includes one sample track per category; the rest require Premium. */
+  isPremium: boolean;
   source: number;
 };
 
@@ -27,6 +29,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'breathing',
         durationSeconds: 20,
         loop: false,
+        isPremium: false,
         source: require('../assets/audio/breathing-4-7-8.mp3'),
       },
       {
@@ -35,6 +38,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'breathing',
         durationSeconds: 20,
         loop: false,
+        isPremium: true,
         source: require('../assets/audio/box-breathing.mp3'),
       },
       {
@@ -43,6 +47,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'breathing',
         durationSeconds: 20,
         loop: false,
+        isPremium: true,
         source: require('../assets/audio/deep-belly-breathing.mp3'),
       },
     ],
@@ -57,6 +62,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'meditation',
         durationSeconds: 20,
         loop: false,
+        isPremium: false,
         source: require('../assets/audio/body-scan.mp3'),
       },
       {
@@ -65,6 +71,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'meditation',
         durationSeconds: 20,
         loop: false,
+        isPremium: true,
         source: require('../assets/audio/gratitude-meditation.mp3'),
       },
       {
@@ -73,6 +80,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'meditation',
         durationSeconds: 20,
         loop: false,
+        isPremium: true,
         source: require('../assets/audio/letting-go-of-the-day.mp3'),
       },
     ],
@@ -87,6 +95,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'nature',
         durationSeconds: 30,
         loop: true,
+        isPremium: false,
         source: require('../assets/audio/rain.mp3'),
       },
       {
@@ -95,6 +104,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'nature',
         durationSeconds: 30,
         loop: true,
+        isPremium: true,
         source: require('../assets/audio/ocean-waves.mp3'),
       },
       {
@@ -103,6 +113,7 @@ export const AUDIO_CATEGORIES: AudioCategory[] = [
         categoryId: 'nature',
         durationSeconds: 30,
         loop: true,
+        isPremium: true,
         source: require('../assets/audio/white-noise.mp3'),
       },
     ],

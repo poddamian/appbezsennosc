@@ -6,14 +6,16 @@ import { Card } from '../../components/Card';
 import { TimeStepper } from '../../components/TimeStepper';
 import { ToggleRow } from '../../components/ToggleRow';
 import { useAuth } from '../../lib/auth';
+import { formatPolishDate, type TimeValue } from '../../lib/journal';
 import { requestNotificationPermission, syncScheduledReminders } from '../../lib/notifications';
-import type { TimeValue } from '../../lib/journal';
+import { usePremium } from '../../lib/premium';
 import { supabase, type UserSettings } from '../../lib/supabase';
 import { useUserSettings } from '../../lib/userSettings';
 
 export default function ProfileScreen() {
   const { session } = useAuth();
   const { settings, isLoading, refresh } = useUserSettings();
+  const { isPremium, trialEndsAt } = usePremium();
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   async function updateSettings(patch: Partial<UserSettings>) {
@@ -70,6 +72,29 @@ export default function ProfileScreen() {
         <Text className="text-3xl font-bold text-indigo-950">Profil</Text>
         {session?.user.email ? <Text className="mt-1 text-sm text-slate-500">{session.user.email}</Text> : null}
       </View>
+
+      <Card>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-lg font-semibold text-indigo-950">{isPremium ? '✨ Premium' : 'Premium'}</Text>
+          {isPremium ? (
+            <View className="rounded-full bg-emerald-100 px-3 py-1">
+              <Text className="text-xs font-semibold text-emerald-700">Aktywne</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text className="mt-2 text-sm text-slate-500">
+          {isPremium
+            ? trialEndsAt
+              ? `Okres próbny trwa do ${formatPolishDate(trialEndsAt)}.`
+              : 'Masz dostęp do pełnej biblioteki audio i historii bez limitu.'
+            : 'Odblokuj pełną bibliotekę audio, historię bez limitu i eksport do PDF.'}
+        </Text>
+        <Pressable
+          onPress={() => router.push('/premium')}
+          className="mt-4 items-center rounded-2xl bg-violet-100 py-3">
+          <Text className="font-semibold text-violet-900">{isPremium ? 'Zarządzaj Premium' : 'Zobacz Premium'}</Text>
+        </Pressable>
+      </Card>
 
       <Card>
         <Text className="text-lg font-semibold text-indigo-950">Rutyna wieczorna</Text>

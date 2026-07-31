@@ -1,11 +1,13 @@
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AudioTrackCard } from '../../components/AudioTrackCard';
 import { Card } from '../../components/Card';
 import { MiniPlayer } from '../../components/MiniPlayer';
 import { AUDIO_CATEGORIES, findTrack, type AudioTrack } from '../../lib/audioLibrary';
+import { usePremium } from '../../lib/premium';
 
 type SleepTimerMinutes = 10 | 20 | 30;
 
@@ -13,6 +15,7 @@ type SleepTimerMinutes = 10 | 20 | 30;
 const FADE_OUT_SECONDS = 15;
 
 export default function RelaxScreen() {
+  const { isPremium } = usePremium();
   const player = useAudioPlayer(null, { updateInterval: 500 });
   const status = useAudioPlayerStatus(player);
 
@@ -82,6 +85,11 @@ export default function RelaxScreen() {
   }
 
   function handleSelectTrack(track: AudioTrack) {
+    if (track.isPremium && !isPremium) {
+      router.push('/premium');
+      return;
+    }
+
     if (activeTrackId === track.id) {
       status.playing ? player.pause() : player.play();
       return;
@@ -120,6 +128,20 @@ export default function RelaxScreen() {
           <Text className="mt-1 text-3xl font-bold text-indigo-950">Wyciszenie</Text>
         </View>
 
+        {!isPremium ? (
+          <Card>
+            <Text className="text-base font-semibold text-indigo-950">🔓 Odblokuj pełną bibliotekę</Text>
+            <Text className="mt-1 text-sm text-slate-500">
+              W darmowej wersji dostępne są 3 nagrania. Premium odblokowuje resztę.
+            </Text>
+            <Pressable
+              onPress={() => router.push('/premium')}
+              className="mt-3 items-center rounded-2xl bg-violet-100 py-2.5">
+              <Text className="font-semibold text-violet-900">Zobacz Premium</Text>
+            </Pressable>
+          </Card>
+        ) : null}
+
         {AUDIO_CATEGORIES.map((category) => (
           <Card key={category.id}>
             <Text className="text-lg font-semibold text-indigo-950">{category.title}</Text>
@@ -130,6 +152,7 @@ export default function RelaxScreen() {
                   track={track}
                   isActive={activeTrackId === track.id}
                   isPlaying={activeTrackId === track.id && status.playing}
+                  isLocked={track.isPremium && !isPremium}
                   onPress={() => handleSelectTrack(track)}
                 />
               ))}

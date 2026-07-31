@@ -6,10 +6,11 @@ type AudioTrackCardProps = {
   track: AudioTrack;
   isActive: boolean;
   isPlaying: boolean;
+  isLocked: boolean;
   onPress: () => void;
 };
 
-export function AudioTrackCard({ track, isActive, isPlaying, onPress }: AudioTrackCardProps) {
+export function AudioTrackCard({ track, isActive, isPlaying, isLocked, onPress }: AudioTrackCardProps) {
   const showPause = isActive && isPlaying;
 
   return (
@@ -26,10 +27,10 @@ export function AudioTrackCard({ track, isActive, isPlaying, onPress }: AudioTra
       </View>
       <View
         className={`h-11 w-11 items-center justify-center rounded-full ${
-          isActive ? 'bg-violet-600' : 'bg-violet-100'
+          isActive ? 'bg-violet-600' : isLocked ? 'bg-slate-100' : 'bg-violet-100'
         }`}>
-        <Text className={`text-lg ${isActive ? 'text-white' : 'text-violet-900'}`}>
-          {showPause ? '❚❚' : '▶'}
+        <Text className={`text-lg ${isActive ? 'text-white' : isLocked ? 'text-slate-400' : 'text-violet-900'}`}>
+          {isLocked ? '🔒' : showPause ? '❚❚' : '▶'}
         </Text>
       </View>
     </Pressable>
